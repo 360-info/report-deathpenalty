@@ -114,7 +114,7 @@ deathrow_data %>%
   build_deathrow_graphic("Indonesia",
     subtitle = paste0(
       '**<span style="color:#cc0000;">Drug offences</span>** have grown since ',
-      '2015 to dominate Indoensia\'s death row population,<br>',
+      '2015 to dominate Indonesia\'s death row population,<br>',
       'as **<span style="color:black;">non-drug offences</span>** remain ',
       'relatively flat.')) %>%
   save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape")
