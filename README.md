@@ -2,7 +2,7 @@
 
 Visualises the makeup of death row populations in several countries in terms of drug offences and non-drug offences.
 
-![image](https://user-images.githubusercontent.com/6520659/187111044-7ad6ee40-6f53-4117-8a5b-678ade8a11fe.png)
+![image](https://user-images.githubusercontent.com/6520659/187111352-573b7a05-eac6-4cb9-8885-df0f776eb216.png)
 
 ## Use + Remix rights
 
