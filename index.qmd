@@ -1,6 +1,6 @@
 ---
-title: "Demo 360 Quarto analysis"
-subtitle: "With another comment on the thing here"
+title: "Death row"
+subtitle: "Analysis of changes in death row populations for drug and non-drug offences"
 author: "James Goldie, 360info"
 date: "2022-03-11"
 code-fold: true

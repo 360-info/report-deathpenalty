@@ -1,6 +1,6 @@
-# 360info report template
+# Death penalty
 
-What's this report all about? What kind of charts or analysis have we done?
+Visualises the makeup of death row populations in several countries in terms of drug offences and non-drug offences.
 
 ## Use + Remix rights
 
@@ -12,7 +12,7 @@ These charts, as well as the analyses that underpin them, are available under a 
 
 Data in these charts comes from:
 
-* Data sources here (with links!)
+* [Harm Reduction International](https://www.hri.global)'s annual _The Death Penalty for Drug Offences: Global Overview_ reports, 2010-2021 (see [the `data` folder](/data) for each year's report link).
 
 **Please attribute 360info and the data sources when you use and remix these visualisations.**
 
@@ -38,4 +38,4 @@ quarto render
 
 <!-- replace `report-template` with the name of this repo in the link below  -->
 
-If you find any problems with our analysis or charts, please feel free to [create an issue](https://github.com/360-info/report-template/issues/new)!
+If you find any problems with our analysis or charts, please feel free to [create an issue](https://github.com/360-info/report-deathpenalty/issues/new)!
