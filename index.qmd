@@ -57,38 +57,53 @@ Now let's do some more polished versions of individual countries:
 #| label: plot-country-fn
 
 build_deathrow_graphic <- function(df, country_name, subtitle) {
-  ggplot(df) +
-      aes(x = date, y = count, fill = measure, colour = measure) +
-      geom_area(alpha = 0.5, position = "identity") +
-      geom_point() +
-      # note that we're presenting "all offences" as "non-drug offences" with
-      # an identity position (instead of stacking "drug offences" and
-      # "all offences")
-      scale_colour_manual(
-        values = c("Drug offences" = "red", "All offences" = "black"),
-        name = "Offence", guide = NULL) +
-      scale_fill_manual(
-        values = c("Drug offences" = "red", "All offences" = "black"),
-        name = "Offence", guide = NULL) +
-      scale_x_date(expand = expansion(0, 0)) +
-      theme_360() +
-      theme(
-        legend.position = "top",
-        legend.direction = "horizontal",
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank(),
-        plot.subtitle = element_markdown(family = "Body 360info", face = "plain")) +
-      labs(
-        x = NULL, y = "Number of people",
-        title = toupper(paste0(country_name, "'s death row")),
-        subtitle = subtitle,
-        caption = paste(
-          "**CHART:** James Goldie, 360info",
-          "**DATA:** The Death Penalty for Drug Offences: Global",
-          "Overview 2010-2021, Harm Reduction International",
-          sep = "<br>"
-        ))
+  deathrow_graphic <- ggplot(df) +
+    aes(x = date, y = count, fill = measure, colour = measure) +
+    geom_area(alpha = 0.5, position = "identity") +
+    geom_point() +
+    # add larger points for "at least" points
+    geom_point(
+      data = df %>% filter(notes == "At least", measure == "Drug offences"),
+      size = 4) +
+    geom_point(
+      data = df %>% filter(notes == "At least", measure == "Drug offences"),
+      size = 3, shape = "+", colour = "white") +
+    # add larger points for "approx" points
+    geom_point(
+      data = df %>% filter(notes == "Estimated"),
+      size = 4) +
+    geom_point(
+      data = df %>% filter(notes == "Estimated"),
+      size = 3, shape = "?", colour = "white") +
+    # note that we're presenting "all offences" as "non-drug offences" with
+    # an identity position (instead of stacking "drug offences" and
+    # "all offences")
+    scale_colour_manual(
+      values = c("Drug offences" = "red", "All offences" = "black"),
+      name = "Offence", guide = NULL) +
+    scale_fill_manual(
+      values = c("Drug offences" = "red", "All offences" = "black"),
+      name = "Offence", guide = NULL) +
+    scale_x_date(expand = expansion(0, 0)) +
+    theme_360() +
+    theme(
+      legend.position = "top",
+      legend.direction = "horizontal",
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      plot.subtitle = element_markdown(family = "Body 360info", face = "plain")) +
+    labs(
+      x = NULL, y = "Number of people",
+      title = toupper(paste0(country_name, "'s death row")),
+      subtitle = subtitle,
+      caption = paste(
+        "**CHART:** James Goldie, 360info",
+        "**DATA:** Harm Reduction International",
+        '<span style="font-size: 12pt;">**?**: approximate figure. **+**: minimum confirmed figure</span> ',
+        sep = "<br>"
+      ))
+  return(deathrow_graphic)
 }
 ```
 
@@ -99,8 +114,9 @@ deathrow_data %>%
   build_deathrow_graphic("Indonesia",
     subtitle = paste0(
       '**<span style="color:#cc0000;">Drug offences</span>** have grown since ',
-      '2015 to be the leading cause of Indonesia\'s<br>death row population, ',
-      'outpacing **<span style="color:black;">non-drug offences</span>**')) %>%
+      '2015 to dominate Indoensia\'s death row population,<br>',
+      'as **<span style="color:black;">non-drug offences</span>** remain ',
+      'relatively flat.')) %>%
   save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape")
 
 knitr::include_graphics(here("out", "deathrow-indonesia.png"))
