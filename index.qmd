@@ -117,7 +117,8 @@ deathrow_data %>%
       '2015 to dominate Indonesia\'s death row population,<br>',
       'as **<span style="color:black;">non-drug offences</span>** remain ',
       'relatively flat.')) %>%
-  save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape")
+  save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape") %>%
+  save_360plot(here("out", "deathrow-indonesia.svg"), shape = "sdtv-landscape")
 
 knitr::include_graphics(here("out", "deathrow-indonesia.png"))
 ```
