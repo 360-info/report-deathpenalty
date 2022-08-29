@@ -7,101 +7,118 @@ code-fold: true
 theme: style/article.scss
 ---
 
-This demo analyses some data on emissions of various pollutants from Our World in Data in R, then creates a chart in Observable JS. The [demo-embed-chart.qmd](demo-embed-chart.qmd) file is an embeddable version of that chart. There's also a very basic example map embed at [demo-embed-map.qmd](demo-embed-map.qmd).
-
-## The analysis
-
-This analysis is _really quick_: we download the OWID data, selecting a
-few columns and giving them tidier names, and we pass it immediately onto Observable JS.
+```{r}
+library(tidyverse)
+library(lubridate)
+library(themes360info)
+library(ggtext)
+library(here)
+```
 
 ```{r}
 #| label: import
 
-library(readr)
-
-pollution <-
-  read_csv(
-    paste0(
-      "https://github.com/owid/owid-datasets/raw/",
-      "dd7a4ecbb249f98028e25c304ef7d68de8979ea9/datasets/",
-      "Air%20Pollutant%20Emissions%20-%20OECD/",
-      "Air%20Pollutant%20Emissions%20-%20OECD.csv"),
-    col_select =
-      c(Entity, Year, `Carbon Monoxide`, `Carbon Monoxide (Index)`))      
-
-names(pollution) <- c("country", "year", "co_tpyr", "co_index")
-pollution
+here("data", "deathrow.csv") %>%
+  read_csv() %>%
+  mutate(
+    date = ymd(paste0(year, "-01-01")),
+    deathrow_all = deathrow_drugs_ppl / deathrow_drugs_frac) %>%
+  pivot_longer(c(deathrow_drugs_ppl, deathrow_all),
+    names_to = "measure", values_to = "count") %>%
+  mutate(measure = recode(measure,
+    "deathrow_drugs_ppl" = "Drug offences",
+    "deathrow_all" = "All offences")) ->
+deathrow_data
 ```
-Here's what the data looks like. To pass it on to Observable JS, we call `ojs_define`. We also pass a list of the countries in the data on separately so
-that we can use it for a dropdown menu.
+
+Let's look at all countries:
 
 ```{r}
-#| label: inspect
-ojs_define(pollution = pollution)
-ojs_define(country_list = unique(pollution$country))
+deathrow_data %>%
+  {
+    ggplot(.) +
+      aes(x = year, y = count, colour = measure) +
+      geom_point() +
+      geom_line() +
+      scale_colour_manual(
+        values = c("Drug offences" = "red", "All offences" = "black"),
+        name = "Offence") +
+      facet_wrap(vars(country), scales = "free_y") +
+      theme_360() +
+      theme(
+        legend.position = "top",
+        legend.direction = "horizontal")
+  }
 ```
 
-The names that we use in `ojs_define` are now available below.
+Now let's do some more polished versions of individual countries:
 
-## The visualisation
+```{r}
+#| label: plot-country-fn
 
-Now, let's chart the data using
-[Observable Plot](https://observablehq.com/@observablehq/plot)! And to make things a little trickier, let's throw a dropdown menu for the country in,
-courtesy of [Observable Inputs](https://observablehq.com/@observablehq/inputs). 
-
-```{ojs}
-//| label: pollutionplot
-
-// here's our dropdown menu, using the country list from R
-viewof countrySelect = Inputs.select(country_list, {label: "Pick a country:"});
-
-// transpose() changes our data from column-major (in R/Python) to row-major for
-// Observable Plot. Then the filter function filters it based on the country
-// input above (hence it's reactive!)
-filteredPollution = transpose(pollution).filter(function(row) {
-  return row.country == countrySelect;
-})
-
-// finally, here's out chart
-pollutionChart = Plot.plot({
-  marks: [
-    // horizontal line at y = 0
-    Plot.ruleY([0]),
-    // bars of tonnes emitted per year, with a tooltip
-    Plot.barY(filteredPollution, {
-      x: "year",
-      y: "co_tpyr",
-      title: (d) => `${d.country} in ${d.year}: ${d.co_tpyr} tonnes`
-    })
-  ],
-  width: 1024
-});
+build_deathrow_graphic <- function(df, country_name, subtitle) {
+  deathrow_graphic <- ggplot(df) +
+    aes(x = date, y = count, fill = measure, colour = measure) +
+    geom_area(alpha = 0.5, position = "identity") +
+    geom_point() +
+    # add larger points for "at least" points
+    geom_point(
+      data = df %>% filter(notes == "At least", measure == "Drug offences"),
+      size = 4) +
+    geom_point(
+      data = df %>% filter(notes == "At least", measure == "Drug offences"),
+      size = 3, shape = "+", colour = "white") +
+    # add larger points for "approx" points
+    geom_point(
+      data = df %>% filter(notes == "Estimated"),
+      size = 4) +
+    geom_point(
+      data = df %>% filter(notes == "Estimated"),
+      size = 3, shape = "?", colour = "white") +
+    # note that we're presenting "all offences" as "non-drug offences" with
+    # an identity position (instead of stacking "drug offences" and
+    # "all offences")
+    scale_colour_manual(
+      values = c("Drug offences" = "red", "All offences" = "black"),
+      name = "Offence", guide = NULL) +
+    scale_fill_manual(
+      values = c("Drug offences" = "red", "All offences" = "black"),
+      name = "Offence", guide = NULL) +
+    scale_x_date(expand = expansion(0, 0)) +
+    theme_360() +
+    theme(
+      legend.position = "top",
+      legend.direction = "horizontal",
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      plot.subtitle = element_markdown(family = "Body 360info", face = "plain")) +
+    labs(
+      x = NULL, y = "Number of people",
+      title = toupper(paste0(country_name, "'s death row")),
+      subtitle = subtitle,
+      caption = paste(
+        "**CHART:** James Goldie, 360info",
+        "**DATA:** Harm Reduction International",
+        '<span style="font-size: 12pt;">**?**: approximate figure. **+**: minimum confirmed figure</span> ',
+        sep = "<br>"
+      ))
+  return(deathrow_graphic)
+}
 ```
 
-Nice! Now check out [`demo-embed-chart.qmd`](demo-embed-chart.html) for the embeddable version!
+```{r}
+#| label: plot-indonesia
+deathrow_data %>%
+  filter(country == "Indonesia") %>%
+  build_deathrow_graphic("Indonesia",
+    subtitle = paste0(
+      '**<span style="color:#cc0000;">Drug offences</span>** have grown since ',
+      '2015 to dominate Indoensia\'s death row population,<br>',
+      'as **<span style="color:black;">non-drug offences</span>** remain ',
+      'relatively flat.')) %>%
+  save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape")
 
-The above example shows that we can have 'reactive' plots at the language level: I can connect a dropdown or other input to the plot and have it respond very easily.
-
-Newer versions of Observable Plot support tooltips and hover styling, although it seems that the version embedded with Quarto doesn't. Other kinds of interactivity don't seem to work.
-
-That said, we can write any kind of JavaScript in an OJS cell, or even import and reuse a chart from a notebook published on <observablehq.com>, provided it's marked with an open source licence. We can even combine this approach with Observable Inputs.
-
-For example, [here's one from d3](https://observablehq.com/@d3/bar-chart-transitions), who are also the makers of Observable Plot:
-
-```{ojs}
-//| label: d3barchart
-
-import {BarChart} from "@d3/bar-chart-transitions"
-
-d3barchart = BarChart(filteredPollution, {
-  x: d => d.year,
-  y: d => d.co_tpyr,
-  yFormat: "",
-  yLabel: "↑ Carbon Monoxide",
-  width,
-  height: 350,
-  color: "#333"
-});
+knitr::include_graphics(here("out", "deathrow-indonesia.png"))
 ```
 
-Note that the dropdown menu from the previous chart controls this one too! So we can use Observable Inputs with custom charts (although note there's no transition - that would be hadled using the chart's `update` method).
