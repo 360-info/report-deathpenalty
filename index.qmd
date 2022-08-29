@@ -11,28 +11,37 @@ theme: style/article.scss
 library(tidyverse)
 library(lubridate)
 library(themes360info)
+library(ggtext)
 library(here)
 ```
 
 ```{r}
+#| label: import
+
 here("data", "deathrow.csv") %>%
   read_csv() %>%
-  filter(country != "Vietnam") %>%
   mutate(
-    date = ymd(paste0(year, "-07-01")),
+    date = ymd(paste0(year, "-01-01")),
     deathrow_all = deathrow_drugs_ppl / deathrow_drugs_frac) %>%
   pivot_longer(c(deathrow_drugs_ppl, deathrow_all),
     names_to = "measure", values_to = "count") %>%
   mutate(measure = recode(measure,
     "deathrow_drugs_ppl" = "Drug offences",
-    "deathrow_all" = "Any offence")) %>%
+    "deathrow_all" = "All offences")) ->
+deathrow_data
+```
+
+Let's look at all countries:
+
+```{r}
+deathrow_data %>%
   {
     ggplot(.) +
       aes(x = year, y = count, colour = measure) +
       geom_point() +
       geom_line() +
       scale_colour_manual(
-        values = c("Drug offences" = "red", "Any offence" = "black"),
+        values = c("Drug offences" = "red", "All offences" = "black"),
         name = "Offence") +
       facet_wrap(vars(country), scales = "free_y") +
       theme_360() +
@@ -41,3 +50,59 @@ here("data", "deathrow.csv") %>%
         legend.direction = "horizontal")
   }
 ```
+
+Now let's do some more polished versions of individual countries:
+
+```{r}
+#| label: plot-country-fn
+
+build_deathrow_graphic <- function(df, country_name, subtitle) {
+  ggplot(df) +
+      aes(x = date, y = count, fill = measure, colour = measure) +
+      geom_area(alpha = 0.5, position = "identity") +
+      geom_point() +
+      # note that we're presenting "all offences" as "non-drug offences" with
+      # an identity position (instead of stacking "drug offences" and
+      # "all offences")
+      scale_colour_manual(
+        values = c("Drug offences" = "red", "All offences" = "black"),
+        name = "Offence", guide = NULL) +
+      scale_fill_manual(
+        values = c("Drug offences" = "red", "All offences" = "black"),
+        name = "Offence", guide = NULL) +
+      scale_x_date(expand = expansion(0, 0)) +
+      theme_360() +
+      theme(
+        legend.position = "top",
+        legend.direction = "horizontal",
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        plot.subtitle = element_markdown(family = "Body 360info", face = "plain")) +
+      labs(
+        x = NULL, y = "Number of people",
+        title = toupper(paste0(country_name, "'s death row")),
+        subtitle = subtitle,
+        caption = paste(
+          "**CHART:** James Goldie, 360info",
+          "**DATA:** The Death Penalty for Drug Offences: Global",
+          "Overview 2010-2021, Harm Reduction International",
+          sep = "<br>"
+        ))
+}
+```
+
+```{r}
+#| label: plot-indonesia
+deathrow_data %>%
+  filter(country == "Indonesia") %>%
+  build_deathrow_graphic("Indonesia",
+    subtitle = paste0(
+      '**<span style="color:#cc0000;">Drug offences</span>** have grown since ',
+      '2015 to be the leading cause of Indonesia\'s<br>death row population, ',
+      'outpacing **<span style="color:black;">non-drug offences</span>**')) %>%
+  save_360plot(here("out", "deathrow-indonesia.png"), shape = "sdtv-landscape")
+
+knitr::include_graphics(here("out", "deathrow-indonesia.png"))
+```
+
